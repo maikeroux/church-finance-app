@@ -20,6 +20,7 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017/userdb
       - JWT_SECRET=your_jwt_secret
+      - MONITORING_URL=http://monitoring-service:4002/api/logs
     depends_on:
       - mongo
 
@@ -31,3 +32,14 @@ services:
       - PG_URI=postgres://faithadmin:faithpass@postgres:5432/finance_db
     depends_on:
       - postgres
+
+  monitoring-service:
+    build: ./monitoring-service
+    ports:
+      - "4002:4002"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/monitoring
+      - JWT_SECRET=your_jwt_secret
+      - PORT=4002
+    depends_on:
+      - mongo

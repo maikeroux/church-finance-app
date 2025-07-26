@@ -5,6 +5,10 @@ const userRoutes = require('./routes/user');
 const app = express();
 
 app.use(express.json());
+
+app.get('/health', (_, res) => {
+  res.status(200).json({status: 'UP',service: 'user-service',timestamp: new Date()});
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 

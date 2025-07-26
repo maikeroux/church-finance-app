@@ -1,0 +1,64 @@
+﻿name: FaithFinance CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Set up Node.js (for running tests)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # 3. Install dependencies (User Service only for now)
+      - name: Install dependencies
+        working-directory: ./user-service
+        run: npm install
+
+      # 4. Run tests (Jest + Supertest)
+      - name: Run tests
+        working-directory: ./user-service
+        run: npm test
+
+      # 5. Log in to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      # 6. Build & push Docker image
+      - name: Build and push Docker image
+        run: |
+          docker build -t delacruzjeremy/church-finance-app-user-service:latest ./user-service
+          docker push delacruzjeremy/church-finance-app-user-service:latest
+
+      # 7. Set up kubectl
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.30.0'
+
+      # 8. Configure Kubeconfig
+      - name: Configure Kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+
+      # 9. Deploy to Kubernetes
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f user-service/k8s/user-service-deployment.yaml

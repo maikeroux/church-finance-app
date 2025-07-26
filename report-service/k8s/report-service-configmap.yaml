@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: report-service-config
+  labels:
+    app: report-service
+data:
+  PORT: "3002"
+  MONGO_URI: "mongodb://mongo:27017/report-servicedb"
