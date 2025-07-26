@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - feature-config-cicd
   pull_request:
     branches:
       - main
+      - feature-config-cicd
 
 jobs:
   build-test-deploy:
