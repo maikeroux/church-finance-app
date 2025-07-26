@@ -30,7 +30,7 @@ jobs:
 
       # 4. Run tests (Jest + Supertest)
       - name: Run tests
-        working-directory: ./user-service
+        working-directory: ./user-service/tests
         run: npm test
 
       # 5. Log in to Docker Hub
