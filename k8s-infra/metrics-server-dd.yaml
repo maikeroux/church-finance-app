@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-server
+  namespace: kube-system
+labels:
+  k8s-app: metrics-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: metrics-server
+  template:
+    metadata:
+      labels:
+        k8s-app: metrics-server
+    spec:
+      containers:
+        - name: metrics-server
+          image: k8s.gcr.io/metrics-server/metrics-server:v0.6.4
+          args:
+            - --cert-dir=/tmp
+            - --secure-port=4443
+            - --kubelet-insecure-tls
+            - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+          ports:
+            - name: main-port
+              containerPort: 4443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metrics-server
+  namespace: kube-system
+labels:
+  k8s-app: metrics-server
+spec:
+  selector:
+    k8s-app: metrics-server
+  ports:
+    - port: 443
+      protocol: TCP
+      targetPort: main-port

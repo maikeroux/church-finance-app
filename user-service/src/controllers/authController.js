@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const logEvent = require('../utils/logEvent');
+
 // const { hashPassword, comparePassword } = require('../utils/hash');
 
 const register = async (req, res) => {
@@ -12,8 +14,23 @@ const register = async (req, res) => {
     const user = new User({ email, password, role });
     await user.save();
 
+    await logEvent({
+      userId: user._id.toString(),
+      action: 'user_registered',
+      metadata: { email, role }
+    });
+
     res.status(201).json({ message: 'User registered' });
   } catch (err) {
+    await logEvent({
+      userId: 'unknown',
+      action: 'registration_failed',
+      metadata: {
+        reason: err.message,
+        email: req.body?.email || 'unknown'
+      }
+    });
+
     res.status(500).json({ error: 'Registration failed' });
   }
 };
@@ -23,10 +40,27 @@ const login = async (req, res) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
-    const isMatch = await comparePassword(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) {
+      await logEvent({
+        userId: 'unknown',
+        action: 'login_failed',
+        metadata: { reason: 'email_not_found', email }
+      });
+
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const isMatch = await user.comparePassword(password, user.password);
+    if (!isMatch) {
+      await logEvent({
+        userId: user?._id?.toString() || 'unknown',
+        action: 'login_failed',
+        metadata: { reason: 'wrong_password', email }
+      });
+
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
     const token = jwt.sign(
       { id: user._id, role: user.role, email: user.email },
@@ -34,8 +68,23 @@ const login = async (req, res) => {
       { expiresIn: '1h' }
     );
 
+    await logEvent({
+      userId: user._id.toString(),
+      action: 'user_logged_in',
+      metadata: { email }
+    });
+
     res.json({ token });
   } catch (err) {
+    await logEvent({
+      userId: 'unknown',
+      action: 'login_failed',
+      metadata: {
+        reason: err.message,
+        email: req.body?.email || 'unknown'
+      }
+    });
+
     res.status(500).json({ error: 'Login failed' });
   }
 };

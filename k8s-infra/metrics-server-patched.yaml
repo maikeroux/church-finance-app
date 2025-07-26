@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-server
+  namespace: kube-system
+  labels:
+    k8s-app: metrics-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: metrics-server
+  template:
+    metadata:
+      labels:
+        k8s-app: metrics-server
+    spec:
+      containers:
+        - name: metrics-server
+          image: registry.k8s.io/metrics-server/metrics-server:v0.7.2
+          args:
+            - --cert-dir=/tmp
+            - --secure-port=4443
+            - --kubelet-insecure-tls
+            - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+          ports:
+            - containerPort: 4443
+              name: main-port
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: main-port
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: main-port
+            initialDelaySeconds: 20
+            periodSeconds: 10
+      nodeSelector:
+        kubernetes.io/os: linux
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metrics-server
+  namespace: kube-system
+  labels:
+    k8s-app: metrics-server
+spec:
+  selector:
+    k8s-app: metrics-server
+  ports:
+    - port: 443
+      protocol: TCP
+      targetPort: main-port
