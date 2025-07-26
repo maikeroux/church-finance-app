@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const logEvent = require('../utils/logEvent');
+
 // const { hashPassword, comparePassword } = require('../utils/hash');
 
 const register = async (req, res) => {
@@ -39,6 +40,7 @@ const login = async (req, res) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
+
     if (!user) {
       await logEvent({
         userId: 'unknown',
