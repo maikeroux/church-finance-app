@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../src/app');
 const mongoose = require('mongoose');
-const User = require('../src/models/User');
+const User = require('../src/models/user');
 
 process.env.JWT_SECRET = 'testsecret';
 process.env.MONGO_URI = 'mongodb://localhost:27017/userdb_test';
