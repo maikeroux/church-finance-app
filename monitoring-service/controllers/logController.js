@@ -11,3 +11,13 @@ exports.createLog = async (req, res) => {
     res.status(500).json({ message: 'Error saving log', error: err.message });
   }
 };
+
+// Get all logs (or with filters later)
+exports.getLogs = async (req, res) => {
+  try {
+    const logs = await Log.find().sort({ timestamp: -1 }); // newest first
+    res.status(200).json(logs);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching logs', error: err.message });
+  }
+};

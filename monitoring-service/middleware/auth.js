@@ -6,9 +6,16 @@ module.exports = function (req, res, next) {
 
   try {
     const verified = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = verified; // contains userId and role
+    console.log('Decoded Token:', verified);
+
+    if (!verified.userId && !verified.service && !verified.id) {
+      return res.status(400).json({ message: 'Invalid Token' });
+    }
+
+    req.user = verified;
     next();
   } catch (err) {
+    console.error('JWT Verify Error:', err);
     res.status(400).json({ message: 'Invalid Token' });
   }
 };
