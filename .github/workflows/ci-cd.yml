@@ -14,26 +14,44 @@ jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
 
+    services:
+      mongo:
+        image: mongo:5
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongo --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      MONGO_URI: mongodb://localhost:27017/userdb_test
+      JWT_SECRET: testsecret
+      MONITORING_SERVICE_URL: http://localhost:31739/api/logs
+      CI: true
+
     steps:
       # 1. Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up Node.js (for running tests)
+      # 2. Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
-      # 3. Install dependencies (User Service only for now)
+      # 3. Install dependencies (User Service)
       - name: Install dependencies
         working-directory: ./user-service
         run: npm install
 
       # 4. Run tests (Jest + Supertest)
       - name: Run tests
-        working-directory: ./user-service/tests
-        run: npm test
+        working-directory: ./user-service
+        run: |
+          npm test
 
       # 5. Log in to Docker Hub
       - name: Log in to Docker Hub
