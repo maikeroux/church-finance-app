@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middleware/auth');
-const User = require('../models/User');
+const User = require('../models/user');
 
 // 🛡️ Only superadmins can view all users
 router.get('/', verifyToken(['superadmin']), async (req, res) => {
