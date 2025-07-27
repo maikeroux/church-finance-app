@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const User = require('../models/user');
 const logEvent = require('../utils/logEvent');
 
 // const { hashPassword, comparePassword } = require('../utils/hash');
