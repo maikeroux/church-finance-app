@@ -77,7 +77,7 @@ jobs:
           echo "Current context:"
           kubectl config current-context
           echo "Cluster info:"
-          kubectl cluster-inf
+          kubectl cluster-info
 
       - name: Verify K8s connection
         run: kubectl get nodes
