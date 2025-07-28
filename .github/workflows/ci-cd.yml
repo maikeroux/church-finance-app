@@ -60,7 +60,7 @@ jobs:
           docker push delacruzjeremy/church-finance-app-user-service:latest
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build-and-test
 
     steps:
