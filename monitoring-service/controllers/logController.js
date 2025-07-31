@@ -4,10 +4,17 @@ exports.createLog = async (req, res) => {
   try {
     const { userId, action, service, metadata } = req.body;
 
-    const log = new Log({ userId, action, service, metadata });
+    const log = new Log({
+      userId: userId || req.user?.id || 'unknown',
+      action,
+      service,
+      metadata,
+    });
+
     await log.save();
     res.status(201).json(log);
   } catch (err) {
+    console.error('❌ Error saving log:', err.message);
     res.status(500).json({ message: 'Error saving log', error: err.message });
   }
 };

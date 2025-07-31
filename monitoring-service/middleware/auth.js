@@ -17,13 +17,13 @@ module.exports = function (req, res, next) {
 
     if (!verified.service) {
       console.log('⛔ Decoded token missing "service" field:', verified);
-      return res.status(400).json({ message: 'Invalid Token - Missing service' });
+      return res.status(401).json({ message: 'Invalid Token - Missing service' });
     }
 
     req.user = verified;
     next();
   } catch (err) {
     console.error('❌ JWT Verify Error:', err.message);
-    res.status(400).json({ message: 'Invalid Token - JWT Error' });
+    res.status(401).json({ message: 'Invalid Token - JWT Error' });
   }
 };
