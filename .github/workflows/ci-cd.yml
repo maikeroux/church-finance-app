@@ -63,10 +63,15 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image (user-service)
         run: |
           docker build -t delacruzjeremy/church-finance-app-user-service:latest ./user-service
           docker push delacruzjeremy/church-finance-app-user-service:latest
+
+      - name: Build and push Docker image (user-service)
+        run: |
+          docker build -t delacruzjeremy/church-finance-app-monitoring-service:latest ./monitoring-service
+          docker push delacruzjeremy/church-finance-app-monitoring-service:latest
 
   deploy:
     runs-on: ubuntu-latest
