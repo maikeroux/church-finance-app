@@ -68,7 +68,7 @@ jobs:
           docker build -t delacruzjeremy/church-finance-app-user-service:latest ./user-service
           docker push delacruzjeremy/church-finance-app-user-service:latest
 
-      - name: Build and push Docker image (user-service)
+      - name: Build and push Docker image (monitoring-service)
         run: |
           docker build -t delacruzjeremy/church-finance-app-monitoring-service:latest ./monitoring-service
           docker push delacruzjeremy/church-finance-app-monitoring-service:latest
@@ -81,7 +81,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up kubeconfig for K3s (Oracle VM)
+      - name: Set up kubeconfig for K3s (AWS VM)
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG_DATA_B64 }}" | base64 -d > $HOME/.kube/config
