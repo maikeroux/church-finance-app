@@ -5,7 +5,7 @@ console.log('JWT_SECRET in test:', process.env.JWT_SECRET);
 const logEvent = async ({ userId, action, service = 'user-service', metadata = {} }) => {
   const url = process.env.MONITORING_SERVICE_URL;
 
-  if (process.env.CI === 'true' || process.env.NODE_ENV === 'test' || process.env.SKIP_LOGGING === 'true') {
+  if (process.env.CI === 'true') {
     console.log(`🛑 Skipping log event in ${process.env.NODE_ENV || 'unknown'} mode`);
     return;
   }

@@ -72,17 +72,21 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG_DATA_B64 }}" | base64 -d > $HOME/.kube/config
       
-      - name: Debug kubeconfig
+      - name: Verify Kubernetes connection
         run: |
-          echo "Current context:"
           kubectl config current-context
-          echo "Cluster info:"
           kubectl cluster-info
+          kubectl get nodes
 
-      - name: Verify K8s connection
-        run: kubectl get nodes
+      - name: Deploy MongoDB
+        run: |
+          kubectl apply -f k8s-infra/mongo-deployment.yaml
 
-      - name: Deploy to Kubernetes cluster
+      - name: Wait for MongoDB to be ready
+        run: |
+          kubectl wait --for=condition=ready pod -l app=mongo --timeout=60s
+
+      - name: Deploy User Service
         run: |
           kubectl apply -f user-service/k8s/user-service-configmap.yaml
           kubectl apply -f user-service/k8s/user-service-secret.yaml
@@ -90,5 +94,5 @@ jobs:
           kubectl apply -f user-service/k8s/user-service-service.yaml
           kubectl apply -f user-service/k8s/user-service-hpa.yaml
 
-      - name: Verify deployment
+      - name: Verify deployments
         run: kubectl get pods -o wide
