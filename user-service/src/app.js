@@ -1,4 +1,8 @@
 const express = require('express');
+const dotenv = require('dotenv');
+
+dotenv.config({ path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env' });
+
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 

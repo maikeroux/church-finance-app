@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const User = require('../models/user');
 const logEvent = require('../utils/logEvent');
 
 // const { hashPassword, comparePassword } = require('../utils/hash');
@@ -64,7 +64,7 @@ const login = async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id, role: user.role, email: user.email },
-      process.env.JWT_SECRET || 'testsecret',
+      process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 

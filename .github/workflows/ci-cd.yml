@@ -4,61 +4,117 @@ on:
   push:
     branches:
       - main
+      - feature-config-cicd
   pull_request:
     branches:
       - main
+      - feature-config-cicd
 
 jobs:
-  build-test-deploy:
+  build-and-test:
     runs-on: ubuntu-latest
 
+    services:
+      mongo:
+        image: mongo:5
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongo --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      MONGO_URI: mongodb://localhost:27017/userdb_test
+      JWT_SECRET: supersecret
+      MONITORING_SERVICE_URL: http://localhost:31739/api/logs
+      CI: true
+
     steps:
-      # 1. Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up Node.js (for running tests)
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
-      # 3. Install dependencies (User Service only for now)
       - name: Install dependencies
         working-directory: ./user-service
         run: npm install
 
-      # 4. Run tests (Jest + Supertest)
       - name: Run tests
         working-directory: ./user-service
         run: npm test
+      
+      - name: Install dependencies (Monitoring Service)
+        working-directory: ./monitoring-service
+        run: npm ci
 
-      # 5. Log in to Docker Hub
+      - name: Run tests (Monitoring Service)
+        working-directory: ./monitoring-service
+        run: |
+          npm test
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      # 6. Build & push Docker image
-      - name: Build and push Docker image
+      - name: Build and push Docker image (user-service)
         run: |
           docker build -t delacruzjeremy/church-finance-app-user-service:latest ./user-service
           docker push delacruzjeremy/church-finance-app-user-service:latest
 
-      # 7. Set up kubectl
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'v1.30.0'
+      - name: Build and push Docker image (monitoring-service)
+        run: |
+          docker build -t delacruzjeremy/church-finance-app-monitoring-service:latest ./monitoring-service
+          docker push delacruzjeremy/church-finance-app-monitoring-service:latest
 
-      # 8. Configure Kubeconfig
-      - name: Configure Kubeconfig
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up kubeconfig for K3s (AWS VM)
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
-
-      # 9. Deploy to Kubernetes
-      - name: Deploy to Kubernetes
+          echo "${{ secrets.KUBECONFIG_DATA_B64 }}" | base64 -d > $HOME/.kube/config
+      
+      - name: Verify Kubernetes connection
         run: |
+          kubectl config current-context
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Deploy MongoDB
+        run: |
+          kubectl apply -f k8s-infra/mongo-deployment.yaml
+
+      - name: Wait for MongoDB to be ready
+        run: |
+          kubectl wait --for=condition=ready pod -l app=mongo --timeout=60s
+
+      - name: Deploy User Service
+        run: |
+          kubectl apply -f user-service/k8s/user-service-configmap.yaml
+          kubectl apply -f user-service/k8s/user-service-secret.yaml
           kubectl apply -f user-service/k8s/user-service-deployment.yaml
+          kubectl apply -f user-service/k8s/user-service-service.yaml
+          kubectl apply -f user-service/k8s/user-service-hpa.yaml
+      
+      - name: Deploy Monitoring Service
+        run: |
+          kubectl apply -f monitoring-service/k8s/monitoring-service-configmap.yaml
+          kubectl apply -f monitoring-service/k8s/monitoring-service-secret.yaml
+          kubectl apply -f monitoring-service/k8s/monitoring-service-deployment.yaml
+          kubectl apply -f monitoring-service/k8s/monitoring-service-service.yaml
+          kubectl apply -f monitoring-service/k8s/monitoring-service-hpa.yaml
+
+      - name: Verify deployments
+        run: kubectl get pods -o wide

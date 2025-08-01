@@ -13,7 +13,10 @@ afterAll(async () => {
   await mongoose.connection.close();
 });
 
-const testToken = jwt.sign({ id: 'test-user-id', role: 'admin' }, process.env.JWT_SECRET);
+const testToken = jwt.sign(
+  { id: 'test-user-id', role: 'admin', service: 'user-service' },
+  process.env.JWT_SECRET
+);
 
 describe('POST /api/logs', () => {
   it('should create a log entry', async () => {
@@ -35,6 +38,15 @@ describe('POST /api/logs', () => {
       .post('/api/logs')
       .send({ action: 'LOGIN_ATTEMPT', service: 'user-service' });
 
-    expect(res.statusCode).toBe(401);
+    expect(res.statusCode).toBe(401); // consistent with updated middleware
+  });
+
+  it('should reject request with invalid token', async () => {
+    const res = await request(app)
+      .post('/api/logs')
+      .set('Authorization', 'Bearer invalid.token.value')
+      .send({ action: 'LOGIN_FAIL', service: 'user-service' });
+
+    expect(res.statusCode).toBe(401); // consistent with updated middleware
   });
 });

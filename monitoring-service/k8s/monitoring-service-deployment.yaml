@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: monitoring-service
-          image: monitoring-service:1.0.0
+          image: delacruzjeremy/church-finance-app-monitoring-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3003

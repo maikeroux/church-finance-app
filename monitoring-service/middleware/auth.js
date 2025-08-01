@@ -1,14 +1,29 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = function (req, res, next) {
-  const token = req.header('Authorization')?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'Access Denied' });
+  const rawAuthHeader = req.get('Authorization') || req.headers['authorization'];
+  console.log('🪪 Raw Auth Header:', rawAuthHeader);
+
+  const token = rawAuthHeader?.split(' ')[1];
+  console.log('🔑 Token to be verified:', token);
+  console.log('With secret:', process.env.JWT_SECRET);
+
+  if (!token) return res.status(401).json({ message: 'Access Denied - No Token' });
 
   try {
+    console.log('JWT_SECRET in auth middleware:', process.env.JWT_SECRET);
     const verified = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = verified; // contains userId and role
+    console.log('✅ Decoded Token:', verified);
+
+    if (!verified.service) {
+      console.log('⛔ Decoded token missing "service" field:', verified);
+      return res.status(401).json({ message: 'Invalid Token - Missing service' });
+    }
+
+    req.user = verified;
     next();
   } catch (err) {
-    res.status(400).json({ message: 'Invalid Token' });
+    console.error('❌ JWT Verify Error:', err.message);
+    res.status(401).json({ message: 'Invalid Token - JWT Error' });
   }
 };
