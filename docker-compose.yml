@@ -7,8 +7,8 @@ services:
   postgres:
     image: postgres
     environment:
-      POSTGRES_USER: faithadmin
-      POSTGRES_PASSWORD: faithpass
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pass123
       POSTGRES_DB: finance_db
     ports:
       - "5432:5432"
@@ -16,30 +16,36 @@ services:
   user-service:
     build: ./user-service
     ports:
-      - "3001:3000"
+      - "3000:3000"
     environment:
       - MONGO_URI=mongodb://mongo:27017/userdb
-      - JWT_SECRET=your_jwt_secret
-      - MONITORING_URL=http://monitoring-service:4002/api/logs
+      - JWT_SECRET=supersecret
+      - MONITORING_SERVICE_URL=http://monitoring-service:3003/api/logs
     depends_on:
       - mongo
+      - monitoring-service
 
   finance-service:
     build: ./finance-service
     ports:
-      - "3002:3000"
+      - "3002:3002"
     environment:
-      - PG_URI=postgres://faithadmin:faithpass@postgres:5432/finance_db
+      - DB_NAME=finance_db
+      - DB_USER=postgres
+      - DB_PASS=pass123
+      - DB_HOST=postgres
+      - MONITORING_SERVICE_URL=http://monitoring-service:3003/api/logs
+      - JWT_SECRET=supersecret
     depends_on:
       - postgres
 
   monitoring-service:
     build: ./monitoring-service
     ports:
-      - "4002:4002"
+      - "3003:3003"
     environment:
       - MONGO_URI=mongodb://mongo:27017/monitoring
-      - JWT_SECRET=your_jwt_secret
-      - PORT=4002
+      - JWT_SECRET=supersecret
+      - PORT=3003
     depends_on:
       - mongo

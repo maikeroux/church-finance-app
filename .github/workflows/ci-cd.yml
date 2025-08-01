@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - feature-config-cicd
+      - feature-finance-service
   pull_request:
     branches:
       - main
-      - feature-config-cicd
+      - feature-finance-service
 
 jobs:
   build-and-test:
