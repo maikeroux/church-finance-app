@@ -4,8 +4,6 @@ console.log('JWT_SECRET in test:', process.env.JWT_SECRET);
 
 const logEvent = async ({ userId, action, service = 'user-service', metadata = {} }) => {
   const url = process.env.MONITORING_SERVICE_URL;
-  console.log('🔍 MONITORING_SERVICE_URL from env:', process.env.MONITORING_SERVICE_URL);
-  console.log('🔍 Is URL undefined?', typeof url === 'undefined');
 
   if (process.env.CI === 'true') {
     console.log(`🛑 Skipping log event in ${process.env.NODE_ENV || 'unknown'} mode`);

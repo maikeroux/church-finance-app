@@ -5,5 +5,8 @@ metadata:
   labels:
     app: finance-service
 data:
-  PORT: "3001"
-  MONGO_URI: "mongodb://mongo:27017/finance-servicedb"
+  DB_NAME: finance_db
+  DB_USER: postgres
+  DB_HOST: postgres
+  MONITORING_SERVICE_URL: http://monitoring-service:3003/api/logs
+  PORT: "3002"

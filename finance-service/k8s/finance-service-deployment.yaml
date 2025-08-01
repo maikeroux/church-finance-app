@@ -2,8 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: finance-service
-  labels:
-    app: finance-service
 spec:
   replicas: 1
   selector:
@@ -16,30 +14,37 @@ spec:
     spec:
       containers:
         - name: finance-service
-          image: your-dockerhub-username/
+          image: delacruzjeremy/church-finance-app-finance-service:latest
           ports:
-            - containerPort: 3001
-          envFrom:
-            - configMapRef:
-                name: finance-service-config
-            - secretRef:
-                name: finance-service-secret
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 3001
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 3001
-            initialDelaySeconds: 15
-            periodSeconds: 20
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "500m"
-              memory: "256Mi"
+            - containerPort: 3002
+          env:
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: finance-service-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: finance-service-config
+                  key: DB_USER
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: finance-service-config
+                  key: DB_HOST
+            - name: MONITORING_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: finance-service-config
+                  key: MONITORING_SERVICE_URL
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: finance-service-secret
+                  key: DB_PASS
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: finance-service-secret
+                  key: JWT_SECRET

@@ -1,17 +1,10 @@
-const express = require("express");
-const { Sequelize } = require("sequelize");
-require("dotenv").config();
-
+const express = require('express');
 const app = express();
+const transactionRoutes = require('./routes/transactionRoutes');
+const errorHandler = require('./middleware/errorHandler');
+
 app.use(express.json());
+app.use('/api/transactions', transactionRoutes);
+app.use(errorHandler); // must be after all routes
 
-const sequelize = new Sequelize(process.env.PG_URI);
-
-sequelize.authenticate()
-  .then(() => console.log("Postgres connected"))
-  .catch(err => console.error("DB Error:", err));
-
-app.get("/", (req, res) => res.send("Finance Service Running"));
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Finance Service on port ${PORT}`));
+module.exports = app;

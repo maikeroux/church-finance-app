@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - feature-config-cicd
+      - feature-finance-service
   pull_request:
     branches:
       - main
-      - feature-config-cicd
+      - feature-finance-service
 
 jobs:
   build-and-test:
@@ -25,10 +25,28 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: pass123
+          POSTGRES_DB: finance_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       MONGO_URI: mongodb://localhost:27017/userdb_test
       JWT_SECRET: supersecret
       MONITORING_SERVICE_URL: http://localhost:31739/api/logs
+      DB_USER: postgres
+      DB_PASS: pass123
+      DB_NAME: finance_db
+      DB_HOST: localhost
       CI: true
 
     steps:
@@ -40,22 +58,29 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install dependencies
+      - name: Install dependencies (User Service)
         working-directory: ./user-service
         run: npm install
 
-      - name: Run tests
+      - name: Run tests (User Service)
         working-directory: ./user-service
         run: npm test
-      
+
       - name: Install dependencies (Monitoring Service)
         working-directory: ./monitoring-service
         run: npm ci
 
       - name: Run tests (Monitoring Service)
         working-directory: ./monitoring-service
-        run: |
-          npm test
+        run: npm test
+
+      - name: Install dependencies (Finance Service)
+        working-directory: ./finance-service
+        run: npm ci
+
+      - name: Run tests (Finance Service)
+        working-directory: ./finance-service
+        run: npm test
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -63,15 +88,20 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Build and push Docker image (user-service)
+      - name: Build and push Docker image (User Service)
         run: |
           docker build -t delacruzjeremy/church-finance-app-user-service:latest ./user-service
           docker push delacruzjeremy/church-finance-app-user-service:latest
 
-      - name: Build and push Docker image (monitoring-service)
+      - name: Build and push Docker image (Monitoring Service)
         run: |
           docker build -t delacruzjeremy/church-finance-app-monitoring-service:latest ./monitoring-service
           docker push delacruzjeremy/church-finance-app-monitoring-service:latest
+
+      - name: Build and push Docker image (Finance Service)
+        run: |
+          docker build -t delacruzjeremy/church-finance-app-finance-service:latest ./finance-service
+          docker push delacruzjeremy/church-finance-app-finance-service:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -85,7 +115,7 @@ jobs:
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG_DATA_B64 }}" | base64 -d > $HOME/.kube/config
-      
+
       - name: Verify Kubernetes connection
         run: |
           kubectl config current-context
@@ -93,12 +123,15 @@ jobs:
           kubectl get nodes
 
       - name: Deploy MongoDB
-        run: |
-          kubectl apply -f k8s-infra/mongo-deployment.yaml
+        run: kubectl apply -f k8s-infra/mongo-deployment.yaml
 
-      - name: Wait for MongoDB to be ready
+      - name: Deploy PostgreSQL
+        run: kubectl apply -f k8s-infra/postgres-deployment.yaml
+
+      - name: Wait for MongoDB and PostgreSQL to be ready
         run: |
           kubectl wait --for=condition=ready pod -l app=mongo --timeout=60s
+          kubectl wait --for=condition=ready pod -l app=postgres --timeout=60s
 
       - name: Deploy User Service
         run: |
@@ -107,7 +140,7 @@ jobs:
           kubectl apply -f user-service/k8s/user-service-deployment.yaml
           kubectl apply -f user-service/k8s/user-service-service.yaml
           kubectl apply -f user-service/k8s/user-service-hpa.yaml
-      
+
       - name: Deploy Monitoring Service
         run: |
           kubectl apply -f monitoring-service/k8s/monitoring-service-configmap.yaml
@@ -115,6 +148,13 @@ jobs:
           kubectl apply -f monitoring-service/k8s/monitoring-service-deployment.yaml
           kubectl apply -f monitoring-service/k8s/monitoring-service-service.yaml
           kubectl apply -f monitoring-service/k8s/monitoring-service-hpa.yaml
+
+      - name: Deploy Finance Service
+        run: |
+          kubectl apply -f finance-service/k8s/finance-service-configmap.yaml
+          kubectl apply -f finance-service/k8s/finance-service-secret.yaml
+          kubectl apply -f finance-service/k8s/finance-service-deployment.yaml
+          kubectl apply -f finance-service/k8s/finance-service-service.yaml
 
       - name: Verify deployments
         run: kubectl get pods -o wide
