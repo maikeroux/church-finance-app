@@ -28,9 +28,9 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_DB: finance_db
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: pass123
+          POSTGRES_DB: finance_db
         ports:
           - 5432:5432
         options: >-
@@ -43,9 +43,9 @@ jobs:
       MONGO_URI: mongodb://localhost:27017/userdb_test
       JWT_SECRET: supersecret
       MONITORING_SERVICE_URL: http://localhost:31739/api/logs
-      DB_NAME: finance_db
       DB_USER: postgres
       DB_PASS: pass123
+      DB_NAME: finance_db
       DB_HOST: localhost
       CI: true
 
@@ -65,7 +65,7 @@ jobs:
       - name: Run tests (User Service)
         working-directory: ./user-service
         run: npm test
-      
+
       - name: Install dependencies (Monitoring Service)
         working-directory: ./monitoring-service
         run: npm ci
@@ -88,17 +88,17 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Build and push Docker image (user-service)
+      - name: Build and push Docker image (User Service)
         run: |
           docker build -t delacruzjeremy/church-finance-app-user-service:latest ./user-service
           docker push delacruzjeremy/church-finance-app-user-service:latest
 
-      - name: Build and push Docker image (monitoring-service)
+      - name: Build and push Docker image (Monitoring Service)
         run: |
           docker build -t delacruzjeremy/church-finance-app-monitoring-service:latest ./monitoring-service
           docker push delacruzjeremy/church-finance-app-monitoring-service:latest
 
-      - name: Build and push Docker image (finance-service)
+      - name: Build and push Docker image (Finance Service)
         run: |
           docker build -t delacruzjeremy/church-finance-app-finance-service:latest ./finance-service
           docker push delacruzjeremy/church-finance-app-finance-service:latest
@@ -115,7 +115,7 @@ jobs:
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG_DATA_B64 }}" | base64 -d > $HOME/.kube/config
-      
+
       - name: Verify Kubernetes connection
         run: |
           kubectl config current-context
@@ -123,12 +123,15 @@ jobs:
           kubectl get nodes
 
       - name: Deploy MongoDB
-        run: |
-          kubectl apply -f k8s-infra/mongo-deployment.yaml
+        run: kubectl apply -f k8s-infra/mongo-deployment.yaml
 
-      - name: Wait for MongoDB to be ready
+      - name: Deploy PostgreSQL
+        run: kubectl apply -f k8s-infra/postgres-deployment.yaml
+
+      - name: Wait for MongoDB and PostgreSQL to be ready
         run: |
           kubectl wait --for=condition=ready pod -l app=mongo --timeout=60s
+          kubectl wait --for=condition=ready pod -l app=postgres --timeout=60s
 
       - name: Deploy User Service
         run: |
@@ -137,7 +140,7 @@ jobs:
           kubectl apply -f user-service/k8s/user-service-deployment.yaml
           kubectl apply -f user-service/k8s/user-service-service.yaml
           kubectl apply -f user-service/k8s/user-service-hpa.yaml
-      
+
       - name: Deploy Monitoring Service
         run: |
           kubectl apply -f monitoring-service/k8s/monitoring-service-configmap.yaml
