@@ -9,7 +9,7 @@ let createdId;
 
 beforeAll(async () => {
   console.log('Sequelize models:', Object.keys(sequelize.models));
-  await sequelize.sync(); // ✅ recreate fresh schema
+  await sequelize.sync({ force: true });
 });
 
 afterAll(async () => {
