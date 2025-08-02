@@ -15,9 +15,15 @@ const PORT = process.env.PORT || 3002;
       await sequelize.authenticate();
       console.log('✅ DB Connected');
 
-      // ✅ Sync models to DB (create tables)
-      await sequelize.sync(); // Or use { force: true } for dev reset
-      console.log('📦 Models synced to DB');
+      // ✅ Only sync models and start server if not in test mode
+      if (process.env.NODE_ENV !== 'test') {
+        await sequelize.sync(); // Or use { force: true } for dev reset
+        console.log('📦 Models synced to DB');
+
+        app.listen(PORT, () => {
+          console.log(`🚀 Finance Service running on port ${PORT}`);
+        });
+      }
 
       break;
     } catch (err) {
@@ -26,8 +32,4 @@ const PORT = process.env.PORT || 3002;
       await new Promise(res => setTimeout(res, 5000));
     }
   }
-
-  app.listen(PORT, () => {
-    console.log(`🚀 Finance Service running on port ${PORT}`);
-  });
 })();
