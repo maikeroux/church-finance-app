@@ -8,7 +8,6 @@ const testToken = jwt.sign({ id: '123', role: 'admin' }, process.env.JWT_SECRET)
 let createdId;
 
 beforeAll(async () => {
-  await sequelize.getQueryInterface().dropAllTables(); // ✅ safer than sequelize.drop()
   await sequelize.sync(); // ✅ recreate fresh schema
 });
 
