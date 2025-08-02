@@ -2,7 +2,7 @@
 const sequelize = require('../src/config/database');
 
 // ✅ Register models
-require('../src/models/transaction');
+const Transaction = require('../src/models/transaction');
 
 // ✅ Optional: log model names for debug
 console.log('Registered models:', Object.keys(sequelize.models));
