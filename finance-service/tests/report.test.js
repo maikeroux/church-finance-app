@@ -1,6 +1,7 @@
 const request = require('supertest');
 const app = require('../src/app');
 const sequelize = require('./setup'); // instead of importing sequelize directly
+const Transaction = require('../src/models/transaction');
 const jwt = require('jsonwebtoken');
 
 const testToken = jwt.sign({ id: '123', role: 'admin' }, process.env.JWT_SECRET);
