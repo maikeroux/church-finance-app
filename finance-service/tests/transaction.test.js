@@ -7,7 +7,7 @@ const testToken = jwt.sign({ id: '123', role: 'admin' }, process.env.JWT_SECRET)
 let createdId;
 
 beforeAll(async () => {
-  console.log('Sequelize models:', Object.keys(sequelize.models));
+  await sequelize.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
   await sequelize.sync({ force: true });
 });
 
