@@ -8,8 +8,9 @@ const testToken = jwt.sign({ id: '123', role: 'admin' }, process.env.JWT_SECRET)
 
 beforeAll(async () => {
     console.log('Sequelize models:', Object.keys(sequelize.models));
-    await sequelize.sync({ force: true });
+    await sequelize.sync();
 
+    console.log('Transaction model loaded:', typeof Transaction === 'function');
     await Transaction.bulkCreate([
         {
             type: 'income',
