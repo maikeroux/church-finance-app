@@ -9,6 +9,7 @@ const testToken = jwt.sign({ id: '123', role: 'admin' }, process.env.JWT_SECRET)
 let createdId;
 
 beforeAll(async () => {
+  require('../src/models/transaction');
   await sequelize.sync({ force: true }); // reset DB
 });
 

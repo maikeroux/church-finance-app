@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - feature-finance-service
+      - feature-report-service
   pull_request:
     branches:
       - main
-      - feature-finance-service
+      - feature-report-service
 
 jobs:
   build-and-test:
