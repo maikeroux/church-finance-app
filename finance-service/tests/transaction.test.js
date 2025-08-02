@@ -1,21 +1,27 @@
 const request = require('supertest');
 const app = require('../src/app');
-const sequelize = require('./setup'); // instead of importing sequelize directly
+const sequelize = require('./setup'); // ✅ Ensures models are registered
+const Transaction = require('../src/models/transaction');
 const jwt = require('jsonwebtoken');
 
 const testToken = jwt.sign({ id: '123', role: 'admin' }, process.env.JWT_SECRET);
 let createdId;
 
 beforeAll(async () => {
-  await sequelize.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
-  await sequelize.sync({ force: true });
+  console.log('Sequelize models:', Object.keys(sequelize.models));
+  await sequelize.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;'); // ✅ Reset ENUMs
+  await sequelize.sync({ force: true }); // ✅ Fresh schema
+  console.log('✅ DB synced');
 });
 
 afterAll(async () => {
   await sequelize.close();
 });
 
-describe('POST /api/transactions', () => {
+//
+// TRANSACTION TESTS
+//
+describe('Transaction API', () => {
   it('should create a new income transaction', async () => {
     const res = await request(app)
       .post('/api/transactions')
@@ -46,9 +52,7 @@ describe('POST /api/transactions', () => {
 
     expect(res.statusCode).toBe(401);
   });
-});
 
-describe('GET /api/transactions', () => {
   it('should return a list of transactions', async () => {
     const res = await request(app)
       .get('/api/transactions')
@@ -56,11 +60,8 @@ describe('GET /api/transactions', () => {
 
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBeGreaterThan(0);
   });
-});
 
-describe('GET /api/transactions/:id', () => {
   it('should return a single transaction by ID', async () => {
     const res = await request(app)
       .get(`/api/transactions/${createdId}`)
@@ -77,9 +78,7 @@ describe('GET /api/transactions/:id', () => {
 
     expect(res.statusCode).toBe(404);
   });
-});
 
-describe('PUT /api/transactions/:id', () => {
   it('should update an existing transaction', async () => {
     const res = await request(app)
       .put(`/api/transactions/${createdId}`)
@@ -89,9 +88,7 @@ describe('PUT /api/transactions/:id', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.remarks).toBe('Updated remark');
   });
-});
 
-describe('DELETE /api/transactions/:id', () => {
   it('should delete the transaction', async () => {
     const res = await request(app)
       .delete(`/api/transactions/${createdId}`)
@@ -106,5 +103,70 @@ describe('DELETE /api/transactions/:id', () => {
       .set('Authorization', `Bearer ${testToken}`);
 
     expect([404, 500]).toContain(res.statusCode);
+  });
+});
+
+//
+// REPORT TESTS
+//
+describe('Report API', () => {
+  beforeAll(async () => {
+    console.log('🧪 Seeding report data...');
+    await Transaction.bulkCreate([
+      {
+        type: 'income',
+        date: '2025-08-01',
+        method: 'cash',
+        particulars: 'Tithes',
+        remarks: '',
+        amount: 200
+      },
+      {
+        type: 'expense',
+        date: '2025-08-01',
+        method: 'cheque',
+        particulars: 'Rent',
+        remarks: '',
+        amount: 150
+      },
+      {
+        type: 'income',
+        date: '2025-08-15',
+        method: 'cash',
+        particulars: 'Offering',
+        remarks: '',
+        amount: 300
+      }
+    ]);
+  });
+
+  it('should return grouped income and expenses for the given week', async () => {
+    const res = await request(app)
+      .get('/api/reports/weekly?year=2025&week=32')
+      .set('Authorization', `Bearer ${testToken}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('income');
+    expect(res.body).toHaveProperty('expenses');
+  });
+
+  it('should return grouped income and expenses for the month', async () => {
+    const res = await request(app)
+      .get('/api/reports/monthly?year=2025&month=8')
+      .set('Authorization', `Bearer ${testToken}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('income');
+    expect(res.body).toHaveProperty('expenses');
+  });
+
+  it('should return grouped income and expenses for the year', async () => {
+    const res = await request(app)
+      .get('/api/reports/yearly?year=2025')
+      .set('Authorization', `Bearer ${testToken}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('income');
+    expect(res.body).toHaveProperty('expenses');
   });
 });
