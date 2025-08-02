@@ -77,6 +77,13 @@ jobs:
       - name: Install dependencies (Finance Service)
         working-directory: ./finance-service
         run: npm ci
+      
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for Postgres...";
+            sleep 2;
+          done
 
       - name: Run tests (Finance Service)
         working-directory: ./finance-service
