@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const testToken = jwt.sign({ id: '123', role: 'admin' }, process.env.JWT_SECRET);
 
 beforeAll(async () => {
+    console.log('Sequelize models:', Object.keys(sequelize.models));
     await sequelize.sync();
 
     await Transaction.bulkCreate([
